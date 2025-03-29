@@ -1,0 +1,86 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #121212;
+    color: #e0e0e0;
+}
+.container {
+    text-align: center;
+    background: #1e1e1e;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+    width: 400px;
+}
+.passphrase-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 20px;
+    background: #2c2c2c;
+}
+.passphrase {
+    flex-grow: 1;
+    margin-right: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.copy-icon {
+    position: relative;
+    cursor: pointer;
+    color: #1e90ff;
+    font-size: 18px;
+}
+.copy-icon:hover {
+    color: #4682b4;
+}
+.copy-icon img {
+    vertical-align: middle;
+    cursor: pointer;
+}
+.copy-icon img:hover {
+    filter: brightness(1.2);
+}
+button {
+    background-color: #1e90ff;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+button:hover {
+    background-color: #4682b4;
+}
+h1 {
+    margin-bottom: 30px;
+}
+.flash-circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background-color: rgba(30, 144, 255, 0.5);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s, width 0.3s, height 0.3s;
+}
+.flash-circle.active {
+    opacity: 1;
+    width: 40px;
+    height: 40px;
+    transition: opacity 0.1s ease-out, width 0.1s ease-out, height 0.1s ease-out;
+}

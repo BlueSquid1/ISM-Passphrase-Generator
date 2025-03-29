@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Passphrase Generator</title>
+    <link rel="stylesheet" href="index.css">
+    <script defer src="index.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Random Passphrase Generator</h1>
+        <form id="passphraseForm">
+            <div class="passphrase-container">
+                <span id="passphrase" class="passphrase">Click "Generate" to create a passphrase</span>
+                <span id="copyIcon" class="copy-icon" title="Copy to clipboard">
+                    <img src="images/copy-icon.svg" alt="Copy" width="16" height="16">
+                    <div class="flash-circle"></div>
+                </span>
+            </div>
+            <button type="button" id="generateBtn">Generate Passphrase</button>
+        </form>
+    </div>
+</body>
+</html>
