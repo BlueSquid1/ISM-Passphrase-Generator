@@ -4,7 +4,8 @@ const generateBtn = document.getElementById('generateBtn');
 
 async function generatePassphrase() {
     try {
-        const response = await fetch('/api/v1/rng');
+        const classification = document.querySelector('input[name="classification"]:checked').value;
+        const response = await fetch(`/api/v1/rng?classification=${encodeURIComponent(classification)}`);
         if (!response.ok) {
             throw new Error('Failed to fetch passphrase');
         }

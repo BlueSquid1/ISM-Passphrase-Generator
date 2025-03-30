@@ -11,6 +11,20 @@
     <div class="container">
         <h1>Random Passphrase Generator</h1>
         <form id="passphraseForm">
+            <div class="classification-container">
+                <label>
+                    <input type="radio" name="classification" value="Protected" checked>
+                    PROTECTED
+                </label>
+                <label>
+                    <input type="radio" name="classification" value="Secret">
+                    SECRET
+                </label>
+                <label>
+                    <input type="radio" name="classification" value="TopSecret">
+                    TOP SECRET
+                </label>
+            </div>
             <div class="passphrase-container">
                 <span id="passphrase" class="passphrase">Click "Generate" to create a passphrase</span>
                 <span id="copyIcon" class="copy-icon" title="Copy to clipboard">
@@ -18,7 +32,7 @@
                     <div class="flash-circle"></div>
                 </span>
             </div>
-            <button type="button" id="generateBtn">Generate Passphrase</button>
+            <button type="button" id="generateBtn">Generate</button>
         </form>
     </div>
 </body>
