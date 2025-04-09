@@ -1,5 +1,5 @@
 # Use the official Go image as the base image
-FROM golang:1.24.1-alpine3.21 as builder
+FROM golang:1.24.1-alpine3.21 AS builder
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -10,11 +10,11 @@ COPY server/go.mod server/go.sum ./server/
 # Download Go module dependencies
 RUN cd server && go mod download
 
-# Copy the source code into the container
-COPY server/ ./server/
-
 # install go command tools
 RUN go install golang.org/x/tools/cmd/stringer@v0.31.0
+
+# Copy the source code into the container
+COPY server/ ./server/
 
 # Build the Go application
 RUN cd server && go generate ./passphaseMgr/classifications.go && go build -o passphrase-generator
@@ -33,6 +33,8 @@ COPY server/data server/data
 COPY --from=builder /app/server/passphrase-generator ./server/
 
 WORKDIR /app/server
+
+EXPOSE 8080
 
 # Command to run the application
 CMD ["./passphrase-generator"]
