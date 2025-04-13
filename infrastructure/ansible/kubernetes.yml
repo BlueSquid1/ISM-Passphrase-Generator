@@ -1,0 +1,4 @@
+- name: Add the user 'sammy' and add it to 'sudo'
+  user:
+    name: sammy
+    group: sudo

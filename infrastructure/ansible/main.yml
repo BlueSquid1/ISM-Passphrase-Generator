@@ -1,0 +1,6 @@
+- name: vps-setup
+  become: yes
+  hosts: all
+  tasks:
+    - name: Install kubernetes
+      import_tasks: kubernetes.yml
