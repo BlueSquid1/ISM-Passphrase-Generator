@@ -1,4 +1,124 @@
-- name: Add the user 'sammy' and add it to 'sudo'
-  user:
-    name: sammy
-    group: sudo
+# Kubelet will not start if the system has swap enabled, so we are disabling swap
+- name: Turn off swap on current boot
+  command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+
+- name: Disable swap on future boots
+  mount:
+    name: "{{ item }}"
+    fstype: swap
+    state: absent
+  with_items:
+    - swap
+    - none
+
+# Kubernetes requires ip forwarding to be enabled
+- name: Ensure IP forwarding is enabled between interfaces
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_file: /etc/sysctl.d/k8s.conf
+    state: present
+    reload: yes
+
+- name: Required packages for Kubernetes + Containerd
+  apt:
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  vars:
+    packages:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gpg
+
+# Need to extend apt so it can install docker's containerd and the offical kubernetes
+- name: add Docker apt-key
+  get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: '0644'
+    force: true
+
+- name: add Docker's APT repository
+  apt_repository:
+    repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+    filename: docker.list
+
+- name: Download the Kubernetes GPG key
+  get_url:
+    url: https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key
+    dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
+    mode: '0644'
+    force: true
+
+- name: Adding apt repository for Kubernetes
+  apt_repository:
+    repo: deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /
+    state: present
+    filename: kubernetes.list
+
+- name: Install containerd binaries
+  apt: 
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  vars:
+    packages:
+      - containerd.io=1.7.27-1
+
+# When containerd is installed from deb it use a non-default config. Reset it to default.
+- name: reset containerd config
+  command: containerd config default > /etc/containerd/config.toml
+  args:
+    creates: /etc/containerd/config.toml
+
+# tell containerd to use systemd to limit container resources as this is what kubelet defaults to
+- name: Tell containerd to use systemd as cgroup driver
+  lineinfile:
+    path: /etc/containerd/config.toml
+    regexp: '            SystemdCgroup = false'
+    line: '            SystemdCgroup = true'
+
+- name: Restart containerd to appy config changes
+  systemd:
+    name: containerd
+    state: restarted
+    enabled: yes
+    daemon-reload: yes
+
+- name: Install Kubernetes
+  apt: 
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+      - kubelet=1.32.3-1.1 
+      - kubeadm=1.32.3-1.1
+      - kubectl=1.32.3-1.1
+
+- name: Enable the kubelet service before running kubeadm
+  systemd:
+    name: kubelet
+    state: restarted
+    enabled: yes
+    daemon-reload: yes
+
+- name: Initialize the Kubernetes cluster using kubeadm
+  shell: kubeadm init --pod-network-cidr=10.244.0.0/16 >> cluster_initialized.log
+  args:
+    chdir: /root
+    creates: cluster_initialized.log
+
+# make kubectl work for your non-root user
+
+- name: install Pod network
+  shell: kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml >> pod_network_setup.log
+  args:
+    chdir: /root
+    creates: pod_network_setup.log
+
+- name: allow to schedule Pods on the control plane node
+  shell: kubectl taint nodes --all node-role.kubernetes.io/control-plane-

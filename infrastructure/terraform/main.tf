@@ -41,7 +41,7 @@ resource "digitalocean_droplet" "kubernetes-cluster" {
   name = "kubernetes-cluster"
   image = "ubuntu-24-04-x64"
   region = "syd1"
-  size = "s-1vcpu-2gb"
+  size = "s-2vcpu-2gb"
   ssh_keys = [
     data.digitalocean_ssh_key.terraform.id
   ]
@@ -60,10 +60,14 @@ resource "digitalocean_droplet" "kubernetes-cluster" {
       "sudo apt install python3 -y"
     ]
   }
+}
 
-  # Runs ansible playbook
-  provisioner "local-exec" {
-    # because computer hasn't connected to the VPS before need to disable key checking to prevent an interactive session
-    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook --user root --inventory '${self.ipv4_address},' --private-key ${var.pvt_key} ${var.ansible_main_script}"
-  }
+output "node_details" {
+  description = "Details of the VPS in JSON list format"
+  value = jsonencode([
+    {
+      name       = digitalocean_droplet.kubernetes-cluster.name
+      ip_address = digitalocean_droplet.kubernetes-cluster.ipv4_address
+    }
+  ])
 }

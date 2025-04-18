@@ -1,0 +1,7 @@
+- name: Create k8s user
+  user:
+    name: k8s
+
+- name: Disable swap
+  command: swapoff -a
+  when: ansible_swaptotal_mb > 0
