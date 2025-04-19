@@ -6,9 +6,6 @@
   apt:
     update_cache: yes
 
-# - name: reboot and wait for reboot to complete
-#   reboot:
-
 - name: disable SWAP (Kubeadm requirement)
   shell: |
     swapoff -a
@@ -173,6 +170,14 @@
   args:
     chdir: $HOME
     creates: pod_network_setup.log
+
+- name: Allow pods to be scheduled on the control plane node
+  become: yes
+  become_user: k8s
+  shell: |
+    kubectl taint nodes --all node-role.kubernetes.io/control-plane-
+  args:
+    executable: /bin/bash
 
 # # Install Helm
 # - name: Install required system Python packages for Kubernetes and Helm
