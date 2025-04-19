@@ -1,103 +1,111 @@
-# Kubelet will not start if the system has swap enabled, so we are disabling swap
-- name: Turn off swap on current boot
-  command: swapoff -a
-  when: ansible_swaptotal_mb > 0
+- name: Create k8s user
+  user:
+    name: k8s
 
-- name: Disable swap on future boots
-  mount:
-    name: "{{ item }}"
-    fstype: swap
-    state: absent
-  with_items:
-    - swap
-    - none
-
-# Kubernetes requires ip forwarding to be enabled
-- name: Ensure IP forwarding is enabled between interfaces
-  ansible.posix.sysctl:
-    name: net.ipv4.ip_forward
-    value: '1'
-    sysctl_file: /etc/sysctl.d/k8s.conf
-    state: present
-    reload: yes
-
-- name: Required packages for Kubernetes + Containerd
+- name: update APT packages
   apt:
-    name: "{{ packages }}"
-    state: present
     update_cache: yes
-  vars:
-    packages:
-      - apt-transport-https
-      - ca-certificates
-      - curl
-      - gpg
 
-# Need to extend apt so it can install docker's containerd and the offical kubernetes
-- name: add Docker apt-key
+# - name: reboot and wait for reboot to complete
+#   reboot:
+
+- name: disable SWAP (Kubeadm requirement)
+  shell: |
+    swapoff -a
+
+- name: disable SWAP in fstab (Kubeadm requirement)
+  replace:
+    path: /etc/fstab
+    regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+    replace: '# \1'
+
+- name: Download the Docker apt-key
   get_url:
     url: https://download.docker.com/linux/ubuntu/gpg
-    dest: /etc/apt/keyrings/docker.asc
+    dest: /etc/apt/keyrings/docker-apt-keyring.asc
     mode: '0644'
     force: true
 
 - name: add Docker's APT repository
   apt_repository:
-    repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }} signed-by=/etc/apt/keyrings/docker-apt-keyring.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
     state: present
     filename: docker.list
+    update_cache: yes
 
-- name: Download the Kubernetes GPG key
+- name: Download the Kubernetes apt-key
   get_url:
     url: https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key
     dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
     mode: '0644'
     force: true
 
-- name: Adding apt repository for Kubernetes
+- name: add Kubernetes' APT repository
   apt_repository:
-    repo: deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /"
     state: present
     filename: kubernetes.list
-
-- name: Install containerd binaries
-  apt: 
-    name: "{{ packages }}"
-    state: present
     update_cache: yes
-  vars:
-    packages:
-      - containerd.io=1.7.27-1
+
+- name: install Containerd
+  apt:
+    name: containerd.io=1.7.27-1
+    state: present
+
+- name: create Containerd directory
+  file:
+    path: /etc/containerd
+    state: directory
 
 # When containerd is installed from deb it use a non-default config. Reset it to default.
 - name: reset containerd config
-  command: containerd config default > /etc/containerd/config.toml
-  args:
-    creates: /etc/containerd/config.toml
+  shell: /usr/bin/containerd config default > /etc/containerd/config.toml
 
 # tell containerd to use systemd to limit container resources as this is what kubelet defaults to
-- name: Tell containerd to use systemd as cgroup driver
+- name: configuring the systemd cgroup driver for Containerd
   lineinfile:
     path: /etc/containerd/config.toml
     regexp: '            SystemdCgroup = false'
     line: '            SystemdCgroup = true'
 
-- name: Restart containerd to appy config changes
+- name: enable the Containerd service and start it
   systemd:
     name: containerd
     state: restarted
     enabled: yes
     daemon-reload: yes
 
-- name: Install Kubernetes
-  apt: 
-    name: "{{ packages }}"
-    state: present
-  vars:
-    packages:
-      - kubelet=1.32.3-1.1 
+- name: install Kubeadm, Kubelet and Kubectl
+  apt:
+    name: 
+      - kubelet=1.32.3-1.1
       - kubeadm=1.32.3-1.1
       - kubectl=1.32.3-1.1
+    state: present
+    update_cache: true
+
+- name: load br_netfilter kernel module needed for flannel
+  modprobe:
+    name: br_netfilter
+    state: present
+
+- name: set bridge-nf-call-iptables needed for ip forwarding with iptables
+  sysctl:
+    name: net.bridge.bridge-nf-call-iptables
+    value: 1
+
+- name: set bridge-nf-call-ip6tables needed for ip forwarding with ip6tables
+  sysctl:
+    name: net.bridge.bridge-nf-call-ip6tables
+    value: 1
+
+- name: set ip_forward needed for ip forwarding with sysctl
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: 1
+
+# - name: apply sysctl params without reboot
+#   command: sysctl --system
 
 - name: Enable the kubelet service before running kubeadm
   systemd:
@@ -106,19 +114,123 @@
     enabled: yes
     daemon-reload: yes
 
-- name: Initialize the Kubernetes cluster using kubeadm
-  shell: kubeadm init --pod-network-cidr=10.244.0.0/16 >> cluster_initialized.log
-  args:
-    chdir: /root
-    creates: cluster_initialized.log
+- name: create an empty file for Kubeadm configuring
+  copy:
+    content: ""
+    dest: /etc/kubernetes/kubeadm-config.yaml
+    force: no
 
-# make kubectl work for your non-root user
+- name: create config for kubeadm
+  blockinfile:
+    path: /etc/kubernetes/kubeadm-config.yaml
+    block: |
+          kind: ClusterConfiguration
+          apiVersion: kubeadm.k8s.io/v1beta3
+          networking:
+            podSubnet: "10.244.0.0/16"
+          ---
+          kind: KubeletConfiguration
+          apiVersion: kubelet.config.k8s.io/v1beta1
+          runtimeRequestTimeout: "15m"
+          cgroupDriver: "systemd"
+          systemReserved:
+            cpu: 100m
+            memory: 350M
+          kubeReserved:
+            cpu: 100m
+            memory: 50M
+          enforceNodeAllocatable:
+          - pods
+
+- name: Initialize the Kubernetes cluster using kubeadm
+  shell: kubeadm init --config /etc/kubernetes/kubeadm-config.yaml > kubeadm_init.log
+  args:
+    chdir: /home/k8s
+    creates: kubeadm_init.log
+
+# Join worker nodes to the cluster here
+
+- name: create .kube directory
+  become: yes
+  become_user: k8s
+  file:
+    path: $HOME/.kube
+    state: directory
+    mode: 0755
+
+- name: copy admin.conf to user's kube config so kubectl works for k8s user
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /home/k8s/.kube/config
+    remote_src: yes
+    owner: k8s
+    mode: '0644'
 
 - name: install Pod network
-  shell: kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml >> pod_network_setup.log
+  become: yes
+  become_user: k8s
+  shell: kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml > pod_network_setup.log
   args:
-    chdir: /root
+    chdir: $HOME
     creates: pod_network_setup.log
 
-- name: allow to schedule Pods on the control plane node
-  shell: kubectl taint nodes --all node-role.kubernetes.io/control-plane-
+# # Install Helm
+# - name: Install required system Python packages for Kubernetes and Helm
+#   apt:
+#     name:
+#       - python3-pip
+#       - python3-kubernetes
+#     state: present
+
+# - name: Download and dearmor Helm GPG key
+#   ansible.builtin.shell: |
+#     curl https://baltocdn.com/helm/signing.asc | gpg --dearmor > /usr/share/keyrings/helm.gpg
+#   args:
+#     creates: /usr/share/keyrings/helm.gpg
+
+# - name: Add Helm APT repository
+#   apt_repository:
+#     repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }} signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main"
+#     filename: helm-stable-debian
+#     state: present
+
+# - name: Install Helm
+#   apt:
+#     name: helm
+#     state: present
+#     update_cache: yes
+
+# # Install flannel as then Container Network Interface (CNI)
+# - name: Create kube-flannel namespace
+#   kubernetes.core.k8s:
+#     api_version: v1
+#     kind: Namespace
+#     name: kube-flannel
+#     state: present
+
+# - name: Label kube-flannel namespace with pod-security policy
+#   kubernetes.core.k8s:
+#     api_version: v1
+#     kind: Namespace
+#     name: kube-flannel
+#     definition:
+#       metadata:
+#         labels:
+#           pod-security.kubernetes.io/enforce: "privileged"
+#     state: present
+#     apply: true
+
+# - name: Add Helm repository for Flannel
+#   kubernetes.core.helm_repository:
+#     name: flannel
+#     repo_url: https://flannel-io.github.io/flannel/
+
+# - name: Install Flannel via Helm
+#   kubernetes.core.helm:
+#     name: flannel
+#     chart_ref: flannel/flannel
+#     release_namespace: kube-flannel
+#     create_namespace: false
+#     values:
+#       podCidr: "10.244.0.0/16"
+#     state: present
