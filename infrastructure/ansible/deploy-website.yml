@@ -1,0 +1,20 @@
+- name: Apply kubernetes deployment
+  become: yes
+  become_user: k8s
+  shell: kubectl apply -f https://raw.githubusercontent.com/BlueSquid1/ISM-Passphrase-Generator/refs/heads/main/deployment.yaml
+
+- name: Wait for rollout to complete
+  become: yes
+  become_user: k8s
+  shell: kubectl rollout status deployment/go-server --timeout=60s
+  register: rollout_status
+  failed_when: "'successfully rolled out' not in rollout_status.stdout"
+  changed_when: false
+
+- name: Wait for pod to become ready
+  become: yes
+  become_user: k8s
+  shell: kubectl wait --for=condition=ready pod -l app=go-server --timeout=60s
+  register: wait_status
+  failed_when: "'condition met' not in wait_status.stdout"
+  changed_when: false

@@ -2,7 +2,7 @@
 set -e
 
 # Building
-docker build -t password-gen:0.0.1 .
+docker build --platform=linux/amd64 -t password-gen:0.0.1 .
 
 # Publishing
 docker login
@@ -17,9 +17,6 @@ else
     echo "Starting Minikube..."
     minikube start
 fi
-
-# docker build -t blueSquid1/password-gen:0.0.1 .
-# docker push blueSquid1/password-gen:0.0.1
 
 # Use minikube docker daemon.
 # eval $(minikube docker-env)

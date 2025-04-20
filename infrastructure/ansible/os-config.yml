@@ -1,3 +1,0 @@
-- name: Create k8s user
-  user:
-    name: k8s

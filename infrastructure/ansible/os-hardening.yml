@@ -1,0 +1,39 @@
+- name: Create .ssh folder
+  become: yes
+  become_user: k8s
+  file:
+    path: ~/.ssh
+    state: directory
+
+- name: Copy ssh key from root to k8s
+  copy:
+    src: /root/.ssh/authorized_keys
+    dest: /home/k8s/.ssh/authorized_keys
+    remote_src: yes
+
+- name: add k8s user to sudo group
+  user:
+    name: k8s
+    groups: sudo
+    append: yes
+
+# - name: remove ssh key from root user
+#   file:
+#     path: /root/.ssh/authorized_keys
+#     state: absent
+
+# - name: disable root user from SSH
+#   lineinfile:
+#     path: /etc/ssh/sshd_config
+#     regexp: '^#?PermitRootLogin'
+#     line: 'PermitRootLogin no'
+#     state: present
+#     backup: yes
+
+# - name: reboot server
+#   reboot:
+#     msg: "Rebooting server to apply changes"
+#     connect_timeout: 5
+#     reboot_timeout: 300
+#     test_command: whoami
+#   register: reboot_status

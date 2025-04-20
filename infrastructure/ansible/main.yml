@@ -4,8 +4,11 @@
   vars:
     ansible_user: root
   tasks:
-    - name: Configure host
-      import_tasks: os-config.yml
-
     - name: Install kubernetes
       import_tasks: kubernetes.yml
+
+    - name: Deploy website
+      import_tasks: deploy-website.yml
+
+    - name: os hardening
+      import_tasks: os-hardening.yml

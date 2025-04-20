@@ -166,7 +166,7 @@
 - name: install Pod network
   become: yes
   become_user: k8s
-  shell: kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml > pod_network_setup.log
+  shell: kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml > pod_network_setup.log
   args:
     chdir: $HOME
     creates: pod_network_setup.log
