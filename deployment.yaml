@@ -1,33 +1,29 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: Pod
 metadata:
-  name: go-server
+  name: passphrase-generator
+  labels:
+    app: passphrase-generator
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: go-server
-  template:
-    metadata:
-      labels:
-        app: go-server
-    spec:
-      containers:
-      - name: go-server
-        image: bluesquid2/password-gen:0.0.1
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8080
+  containers:
+  - name: passphrase-generator
+    image: bluesquid2/password-gen:0.0.1
+    ports:
+    - containerPort: 8080
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: go-server-service
+  name: passphrase-generator-service # creates a DNS entry with this name so it can be accessed from other pods
+  labels:
+    app: passphrase-generator
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
-    app: go-server
+    app: passphrase-generator # connect to pods with this label
   ports:
-    - protocol: TCP
-      port: 8080
+    - name: http
+      protocol: TCP
+      port: 8080 # port to access the service from within the cluster
       targetPort: 8080
+      nodePort: 30000 # port to access the service from outside the cluster

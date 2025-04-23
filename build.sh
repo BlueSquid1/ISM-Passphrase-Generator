@@ -1,4 +1,3 @@
-#docker compose -f docker-compose.yml up --build
 set -e
 
 # Building
@@ -18,10 +17,7 @@ else
     minikube start
 fi
 
-# Use minikube docker daemon.
-# eval $(minikube docker-env)
-# docker build -t go-server .
 kubectl apply -f deployment.yaml
 kubectl rollout status deployment/go-server --timeout=60s
 kubectl wait --for=condition=ready pod -l app=go-server --timeout=60s
-minikube service go-server-service
+minikube service passphrase-generator-service
