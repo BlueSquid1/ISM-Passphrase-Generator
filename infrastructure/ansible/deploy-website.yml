@@ -18,3 +18,9 @@
   register: wait_status
   failed_when: "'condition met' not in wait_status.stdout"
   changed_when: false
+
+# - name: add NFT table
+#   command: 
+
+# - name: Port forward
+#   command: nft add rule ip nat PREROUTING tcp dport 80 redirect to 3000
