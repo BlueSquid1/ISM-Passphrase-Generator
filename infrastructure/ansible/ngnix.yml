@@ -1,0 +1,19 @@
+- name: Create ngnix user
+  user:
+    name: ngnix
+    shell: /bin/bash
+    groups: docker
+    home: /home/ngnix
+
+- name: Install docker-ce and docker-compose
+  apt:
+    name:
+      - docker-ce
+      - docker-compose
+
+- name: Ensure Docker service is running and enabled
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+

@@ -1,4 +1,4 @@
-- name: Create .ssh folder
+- name: Create .ssh folder in k8s home
   become: yes
   become_user: k8s
   file:
@@ -11,11 +11,25 @@
     dest: /home/k8s/.ssh/authorized_keys
     remote_src: yes
 
-- name: add k8s user to sudo group
-  user:
-    name: k8s
-    groups: sudo
-    append: yes
+- name: install UFW
+  apt:
+    name: ufw
+
+- name: Allow SSH through UFW
+  community.general.ufw:
+    rule: limit
+    port: ssh
+    proto: tcp
+
+- name: Allow HTTP through UFW
+  community.general.ufw:
+    rule: allow
+    port: 80
+    proto: tcp
+
+- name: enable UFW
+  community.general.ufw:
+    state: enabled
 
 # - name: remove ssh key from root user
 #   file:
@@ -29,11 +43,3 @@
 #     line: 'PermitRootLogin no'
 #     state: present
 #     backup: yes
-
-# - name: reboot server
-#   reboot:
-#     msg: "Rebooting server to apply changes"
-#     connect_timeout: 5
-#     reboot_timeout: 300
-#     test_command: whoami
-#   register: reboot_status

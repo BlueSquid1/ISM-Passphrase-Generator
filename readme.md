@@ -19,8 +19,12 @@ eval $(minikube docker-env)
 docker build -t go-server .
 ```
 
+## TODO
+- enable states in digitalocean
+- use digital ocean docker register
+
 ## Thoughts on how to do CI/CD
-dev -> unit tests -> pre-prod -> approves pull request -> prod
+dev -> unit tests -> upload to digital ocean container register with branch name as version tag -> pre-prod -> approves pull request -> prod
 
 dev - an environment where engineers can independently develop their features
 unit tests - runs when compiling code on dev and in the CI/CD pipeline on pull requests

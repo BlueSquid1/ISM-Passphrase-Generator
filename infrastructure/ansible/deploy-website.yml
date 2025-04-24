@@ -1,26 +1,43 @@
+- name: Copy kubernetes deployment file
+  copy:
+    src: ../../deployment.yaml
+    dest: /home/k8s/deployment.yaml
+    owner: k8s
+    group: k8s
+    mode: '0644'
+
 - name: Apply kubernetes deployment
   become: yes
   become_user: k8s
-  shell: kubectl apply -f https://raw.githubusercontent.com/BlueSquid1/ISM-Passphrase-Generator/refs/heads/main/deployment.yaml
+  shell: kubectl apply -f /home/k8s/deployment.yaml
 
-- name: Wait for rollout to complete
+- name: Wait for the pod to be ready
   become: yes
   become_user: k8s
-  shell: kubectl rollout status deployment/go-server --timeout=60s
-  register: rollout_status
-  failed_when: "'successfully rolled out' not in rollout_status.stdout"
+  shell: |
+    kubectl wait --for=condition=Ready pod/passphrase-generator --timeout=60s
+  register: wait_result
+  failed_when: "'condition met' not in wait_result.stdout"
   changed_when: false
 
-- name: Wait for pod to become ready
+- name: copy nginx config
+  copy:
+    src: config/default.conf
+    dest: /etc/nginx/conf.d/default.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: copy docker compose file
+  copy:
+    src: config/compose.yaml
+    dest: /home/ngnix/compose.yaml
+    owner: ngnix
+    group: ngnix
+    mode: '0644'
+
+- name: Run docker-compose
   become: yes
-  become_user: k8s
-  shell: kubectl wait --for=condition=ready pod -l app=go-server --timeout=60s
-  register: wait_status
-  failed_when: "'condition met' not in wait_status.stdout"
-  changed_when: false
-
-# - name: add NFT table
-#   command: 
-
-# - name: Port forward
-#   command: nft add rule ip nat PREROUTING tcp dport 80 redirect to 3000
+  become_user: ngnix
+  community.docker.docker_compose_v2:
+    project_src: /home/ngnix

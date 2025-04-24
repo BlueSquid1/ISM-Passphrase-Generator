@@ -1,6 +1,8 @@
 - name: Create k8s user
   user:
     name: k8s
+    shell: /bin/bash
+    home: /home/k8s
 
 - name: update APT packages
   apt:
@@ -47,7 +49,6 @@
 - name: install Containerd
   apt:
     name: containerd.io=1.7.27-1
-    state: present
 
 - name: create Containerd directory
   file:
@@ -78,7 +79,6 @@
       - kubelet=1.32.3-1.1
       - kubeadm=1.32.3-1.1
       - kubectl=1.32.3-1.1
-    state: present
     update_cache: true
 
 - name: load br_netfilter kernel module needed for flannel
@@ -100,9 +100,6 @@
   sysctl:
     name: net.ipv4.ip_forward
     value: 1
-
-# - name: apply sysctl params without reboot
-#   command: sysctl --system
 
 - name: Enable the kubelet service before running kubeadm
   systemd:
