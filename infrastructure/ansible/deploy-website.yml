@@ -20,12 +20,16 @@
   failed_when: "'condition met' not in wait_result.stdout"
   changed_when: false
 
+- name: create ngnix config folder
+  file:
+    path: /etc/nginx/conf.d
+    state: directory
+    mode: '0644'
+
 - name: copy nginx config
   copy:
     src: config/default.conf
     dest: /etc/nginx/conf.d/default.conf
-    owner: root
-    group: root
     mode: '0644'
 
 - name: copy docker compose file

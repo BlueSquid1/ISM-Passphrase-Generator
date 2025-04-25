@@ -30,7 +30,6 @@
     repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }} signed-by=/etc/apt/keyrings/docker-apt-keyring.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
     state: present
     filename: docker.list
-    update_cache: yes
 
 - name: Download the Kubernetes apt-key
   get_url:
@@ -44,6 +43,9 @@
     repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /"
     state: present
     filename: kubernetes.list
+
+- name: update APT packages again
+  apt:
     update_cache: yes
 
 - name: install Containerd
@@ -79,7 +81,6 @@
       - kubelet=1.32.3-1.1
       - kubeadm=1.32.3-1.1
       - kubectl=1.32.3-1.1
-    update_cache: true
 
 - name: load br_netfilter kernel module needed for flannel
   modprobe:
@@ -171,68 +172,7 @@
 - name: Allow pods to be scheduled on the control plane node
   become: yes
   become_user: k8s
-  shell: |
-    kubectl taint nodes --all node-role.kubernetes.io/control-plane-
+  shell: kubectl taint nodes --all node-role.kubernetes.io/control-plane- > taint_nodes.log
   args:
-    executable: /bin/bash
-
-# # Install Helm
-# - name: Install required system Python packages for Kubernetes and Helm
-#   apt:
-#     name:
-#       - python3-pip
-#       - python3-kubernetes
-#     state: present
-
-# - name: Download and dearmor Helm GPG key
-#   ansible.builtin.shell: |
-#     curl https://baltocdn.com/helm/signing.asc | gpg --dearmor > /usr/share/keyrings/helm.gpg
-#   args:
-#     creates: /usr/share/keyrings/helm.gpg
-
-# - name: Add Helm APT repository
-#   apt_repository:
-#     repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }} signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main"
-#     filename: helm-stable-debian
-#     state: present
-
-# - name: Install Helm
-#   apt:
-#     name: helm
-#     state: present
-#     update_cache: yes
-
-# # Install flannel as then Container Network Interface (CNI)
-# - name: Create kube-flannel namespace
-#   kubernetes.core.k8s:
-#     api_version: v1
-#     kind: Namespace
-#     name: kube-flannel
-#     state: present
-
-# - name: Label kube-flannel namespace with pod-security policy
-#   kubernetes.core.k8s:
-#     api_version: v1
-#     kind: Namespace
-#     name: kube-flannel
-#     definition:
-#       metadata:
-#         labels:
-#           pod-security.kubernetes.io/enforce: "privileged"
-#     state: present
-#     apply: true
-
-# - name: Add Helm repository for Flannel
-#   kubernetes.core.helm_repository:
-#     name: flannel
-#     repo_url: https://flannel-io.github.io/flannel/
-
-# - name: Install Flannel via Helm
-#   kubernetes.core.helm:
-#     name: flannel
-#     chart_ref: flannel/flannel
-#     release_namespace: kube-flannel
-#     create_namespace: false
-#     values:
-#       podCidr: "10.244.0.0/16"
-#     state: present
+    chdir: $HOME
+    creates: taint_nodes.log

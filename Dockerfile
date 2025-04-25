@@ -34,7 +34,7 @@ COPY --from=builder /app/server/passphrase-generator ./server/
 
 WORKDIR /app/server
 
-EXPOSE 8080
+EXPOSE 80
 
 # Command to run the application
 CMD ["./passphrase-generator"]

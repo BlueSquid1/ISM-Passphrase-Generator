@@ -1,10 +1,3 @@
-- name: Create ngnix user
-  user:
-    name: ngnix
-    shell: /bin/bash
-    groups: docker
-    home: /home/ngnix
-
 - name: Install docker-ce and docker-compose
   apt:
     name:
@@ -17,3 +10,9 @@
     state: started
     enabled: yes
 
+- name: Create ngnix user
+  user:
+    name: ngnix
+    shell: /bin/bash
+    groups: docker
+    home: /home/ngnix

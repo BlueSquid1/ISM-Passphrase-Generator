@@ -27,6 +27,12 @@
     port: 80
     proto: tcp
 
+- name: Allow HTTPS through UFW
+  community.general.ufw:
+    rule: allow
+    port: 443
+    proto: tcp
+
 - name: enable UFW
   community.general.ufw:
     state: enabled
