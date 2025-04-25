@@ -16,3 +16,59 @@
     shell: /bin/bash
     groups: docker
     home: /home/ngnix
+
+- name: create ngnix config folder
+  file:
+    path: /home/ngnix/conf.d
+    state: directory
+    mode: '0644'
+
+- name: copy docker compose files
+  copy:
+    src: "{{ item }}"
+    dest: /home/ngnix/
+    owner: ngnix
+    group: ngnix
+    mode: '0644'
+  with_fileglob:
+    - "config/compose.*.yaml"
+
+- name: copy http only nginx config
+  copy:
+    src: config/http-only.conf
+    dest: /home/ngnix/conf.d/http-only.conf
+    mode: '0644'
+
+- name: start ngnix docker container
+  become: yes
+  become_user: ngnix
+  community.docker.docker_compose_v2:
+    project_src: /home/ngnix
+    wait: yes
+    files:
+      - compose.ngnix.yaml
+
+- name: generate ssl cert
+  become: yes
+  become_user: ngnix
+  community.docker.docker_compose_v2:
+    project_src: /home/ngnix
+    wait: yes
+    files:
+      - compose.certbot.yaml
+
+- name: add https only nginx config
+  copy:
+    src: config/https-only.conf
+    dest: /home/ngnix/conf.d/https-only.conf
+    mode: '0644'
+
+- name: restart ngnix docker container
+  become: yes
+  become_user: ngnix
+  community.docker.docker_compose_v2:
+    project_src: /home/ngnix
+    wait: yes
+    state: restarted
+    files:
+      - compose.ngnix.yaml

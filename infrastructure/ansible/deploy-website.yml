@@ -19,29 +19,3 @@
   register: wait_result
   failed_when: "'condition met' not in wait_result.stdout"
   changed_when: false
-
-- name: create ngnix config folder
-  file:
-    path: /etc/nginx/conf.d
-    state: directory
-    mode: '0644'
-
-- name: copy nginx config
-  copy:
-    src: config/default.conf
-    dest: /etc/nginx/conf.d/default.conf
-    mode: '0644'
-
-- name: copy docker compose file
-  copy:
-    src: config/compose.yaml
-    dest: /home/ngnix/compose.yaml
-    owner: ngnix
-    group: ngnix
-    mode: '0644'
-
-- name: Run docker-compose
-  become: yes
-  become_user: ngnix
-  community.docker.docker_compose_v2:
-    project_src: /home/ngnix
