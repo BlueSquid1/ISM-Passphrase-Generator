@@ -11,7 +11,7 @@
     dest: /home/k8s/.ssh/authorized_keys
     remote_src: yes
 
-- name: install UFW
+- name: Install UFW
   apt:
     name: ufw
 
@@ -33,7 +33,7 @@
     port: 443
     proto: tcp
 
-- name: enable UFW
+- name: Enable UFW
   community.general.ufw:
     state: enabled
 

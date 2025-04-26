@@ -17,58 +17,67 @@
     groups: docker
     home: /home/ngnix
 
-- name: create ngnix config folder
+- name: Delete existing ngnix configs files
   file:
-    path: /home/ngnix/conf.d
+    path: /home/ngnix/config
+    state: absent
+
+- name: Bulk sync ngnix config files
+  copy:
+    src: config/
+    dest: /home/ngnix/config/
+
+- name: Create local systemd service folder
+  file:
+    path: /usr/local/lib/systemd
     state: directory
-    mode: '0644'
 
-- name: copy docker compose files
-  copy:
-    src: "{{ item }}"
-    dest: /home/ngnix/
-    owner: ngnix
-    group: ngnix
-    mode: '0644'
-  with_fileglob:
-    - "config/compose.*.yaml"
+- name: Create symlink for systemd service
+  file:
+    src: /home/ngnix/config/systemd
+    dest: /usr/local/lib/systemd/system
+    state: link
 
-- name: copy http only nginx config
-  copy:
-    src: config/http-only.conf
-    dest: /home/ngnix/conf.d/http-only.conf
-    mode: '0644'
+# certbot needs the http server to be running to verify domain ownership
+# Ngnix crashes if the https server is not configured properly so remove it
+# until the cert is generated.
+- name: Remove https config
+  file:
+    path: /home/ngnix/config/conf.d/ngnix-https.conf
+    state: absent
 
-- name: start ngnix docker container
-  become: yes
-  become_user: ngnix
-  community.docker.docker_compose_v2:
-    project_src: /home/ngnix
-    wait: yes
-    files:
-      - compose.ngnix.yaml
-
-- name: generate ssl cert
-  become: yes
-  become_user: ngnix
-  community.docker.docker_compose_v2:
-    project_src: /home/ngnix
-    wait: yes
-    files:
-      - compose.certbot.yaml
-
-- name: add https only nginx config
-  copy:
-    src: config/https-only.conf
-    dest: /home/ngnix/conf.d/https-only.conf
-    mode: '0644'
-
-- name: restart ngnix docker container
-  become: yes
-  become_user: ngnix
-  community.docker.docker_compose_v2:
-    project_src: /home/ngnix
-    wait: yes
+- name: Start ngnix docker container
+  systemd:
+    name: ngnix
     state: restarted
-    files:
-      - compose.ngnix.yaml
+    daemon-reload: yes
+
+# Certbot has rate limiting. To prevent hitting the rate limit,
+# we need to check if the cert already exists
+- name: Check if cert already exists
+  stat:
+    path: /home/ngnix/ssl/www.pagepress.com.au/fullchain.pem
+  register: cert_stat
+
+- name: Generate ssl cert
+  when: not cert_stat.stat.exists
+  systemd:
+    name: certbot.service
+    state: restarted
+
+- name: Add https only nginx config
+  copy:
+    src: config/conf.d/ngnix-https.conf
+    dest: /home/ngnix/config/conf.d/https-only.conf
+
+- name: Restart ngnix docker container and enable it
+  systemd:
+    name: ngnix
+    state: restarted
+    enabled: yes
+
+- name: Enable certbot timer
+  systemd:
+    name: certbot.timer
+    state: started
+    enabled: yes

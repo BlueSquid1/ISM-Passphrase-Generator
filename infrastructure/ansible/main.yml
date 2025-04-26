@@ -13,5 +13,5 @@
     - name: Deploy website
       import_tasks: deploy-website.yml
 
-    - name: os hardening
+    - name: OS hardening
       import_tasks: os-hardening.yml

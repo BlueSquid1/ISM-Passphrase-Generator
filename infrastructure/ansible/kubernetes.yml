@@ -4,15 +4,15 @@
     shell: /bin/bash
     home: /home/k8s
 
-- name: update APT packages
+- name: Update APT packages
   apt:
     update_cache: yes
 
-- name: disable SWAP (Kubeadm requirement)
+- name: Disable SWAP (Kubeadm requirement)
   shell: |
     swapoff -a
 
-- name: disable SWAP in fstab (Kubeadm requirement)
+- name: Disable SWAP in fstab (Kubeadm requirement)
   replace:
     path: /etc/fstab
     regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
@@ -25,7 +25,7 @@
     mode: '0644'
     force: true
 
-- name: add Docker's APT repository
+- name: Add Docker's APT repository
   apt_repository:
     repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }} signed-by=/etc/apt/keyrings/docker-apt-keyring.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
     state: present
@@ -38,13 +38,13 @@
     mode: '0644'
     force: true
 
-- name: add Kubernetes' APT repository
+- name: Add Kubernetes' APT repository
   apt_repository:
     repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /"
     state: present
     filename: kubernetes.list
 
-- name: update APT packages again
+- name: Update APT packages again
   apt:
     update_cache: yes
 
@@ -52,52 +52,52 @@
   apt:
     name: containerd.io=1.7.27-1
 
-- name: create Containerd directory
+- name: Create Containerd directory
   file:
     path: /etc/containerd
     state: directory
 
 # When containerd is installed from deb it use a non-default config. Reset it to default.
-- name: reset containerd config
+- name: Reset containerd config
   shell: /usr/bin/containerd config default > /etc/containerd/config.toml
 
 # tell containerd to use systemd to limit container resources as this is what kubelet defaults to
-- name: configuring the systemd cgroup driver for Containerd
+- name: Configuring the systemd cgroup driver for Containerd
   lineinfile:
     path: /etc/containerd/config.toml
     regexp: '            SystemdCgroup = false'
     line: '            SystemdCgroup = true'
 
-- name: enable the Containerd service and start it
+- name: Enable the Containerd service and start it
   systemd:
     name: containerd
     state: restarted
     enabled: yes
     daemon-reload: yes
 
-- name: install Kubeadm, Kubelet and Kubectl
+- name: Install Kubeadm, Kubelet and Kubectl
   apt:
     name: 
       - kubelet=1.32.3-1.1
       - kubeadm=1.32.3-1.1
       - kubectl=1.32.3-1.1
 
-- name: load br_netfilter kernel module needed for flannel
+- name: Load br_netfilter kernel module needed for flannel
   modprobe:
     name: br_netfilter
     state: present
 
-- name: set bridge-nf-call-iptables needed for ip forwarding with iptables
+- name: Set bridge-nf-call-iptables needed for ip forwarding with iptables
   sysctl:
     name: net.bridge.bridge-nf-call-iptables
     value: 1
 
-- name: set bridge-nf-call-ip6tables needed for ip forwarding with ip6tables
+- name: Set bridge-nf-call-ip6tables needed for ip forwarding with ip6tables
   sysctl:
     name: net.bridge.bridge-nf-call-ip6tables
     value: 1
 
-- name: set ip_forward needed for ip forwarding with sysctl
+- name: Set ip_forward needed for ip forwarding with sysctl
   sysctl:
     name: net.ipv4.ip_forward
     value: 1
@@ -109,13 +109,13 @@
     enabled: yes
     daemon-reload: yes
 
-- name: create an empty file for Kubeadm configuring
+- name: Create an empty file for Kubeadm configuring
   copy:
     content: ""
     dest: /etc/kubernetes/kubeadm-config.yaml
     force: no
 
-- name: create config for kubeadm
+- name: Create config for kubeadm
   blockinfile:
     path: /etc/kubernetes/kubeadm-config.yaml
     block: |
@@ -145,7 +145,7 @@
 
 # Join worker nodes to the cluster here
 
-- name: create .kube directory
+- name: Create .kube directory
   become: yes
   become_user: k8s
   file:
@@ -153,7 +153,7 @@
     state: directory
     mode: 0755
 
-- name: copy admin.conf to user's kube config so kubectl works for k8s user
+- name: Copy admin.conf to user's kube config so kubectl works for k8s user
   copy:
     src: /etc/kubernetes/admin.conf
     dest: /home/k8s/.kube/config
@@ -161,7 +161,7 @@
     owner: k8s
     mode: '0644'
 
-- name: install Pod network
+- name: Install Pod network
   become: yes
   become_user: k8s
   shell: kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml > pod_network_setup.log
