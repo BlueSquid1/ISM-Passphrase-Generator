@@ -4,6 +4,13 @@
     shell: /bin/bash
     home: /home/k8s
 
+- name: Remove netplan default configs
+  file:
+    path: /etc/netplan
+    state: absent
+
+# - name: Set ip address on second network interface for k8s
+
 - name: Update APT packages
   apt:
     update_cache: yes

@@ -1,0 +1,13 @@
+[Unit]
+Description=certbot scheduled checks
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=ngnix
+RemainAfterExit=yes
+ExecStart=/bin/bash -c "docker compose -f /home/ngnix/docker/compose.certbot.yml up --exit-code-from certbot"
+
+[Install]
+WantedBy=multi-user.target
