@@ -55,7 +55,7 @@ func main() {
 		log.Fatal(err)
 	}
 	http.HandleFunc("GET /api/v1/rng", httpHandler.handleGetRng)
-	addr := "0.0.0.0:80"
+	addr := "0.0.0.0:8080"
 	fmt.Printf("listening on: %s\n", addr)
 	log.Fatal(http.ListenAndServe(addr, nil)) // tells go to use global http handler
 }

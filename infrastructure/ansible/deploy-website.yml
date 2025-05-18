@@ -1,21 +1,31 @@
-- name: Copy kubernetes deployment file
+- name: Copy latest project config files
   copy:
-    src: ../../deployment.yaml
-    dest: /home/k8s/deployment.yaml
-    owner: k8s
-    group: k8s
-    mode: '0644'
+    src: ../../config/
+    dest: /home/web/config/
+    owner: web
+    group: web
+    mode: 'preserve'
 
-- name: Apply kubernetes deployment
-  become: yes
-  become_user: k8s
-  shell: kubectl apply -f /home/k8s/deployment.yaml
+- name: Create symlink for systemd service
+  file:
+    src: /home/web/config/systemd
+    dest: /usr/local/lib/systemd/system
+    state: link
 
-- name: Wait for the pod to be ready
-  become: yes
-  become_user: k8s
-  shell: |
-    kubectl wait --for=condition=Ready pod/passphrase-generator --timeout=60s
-  register: wait_result
-  failed_when: "'condition met' not in wait_result.stdout"
-  changed_when: false
+# Copy state from previous instance
+
+- name: reload systemd services
+  systemd:
+    daemon-reload: yes
+
+- name: Start web docker container
+  systemd:
+    name: ism-web
+    state: restarted
+    enabled: yes
+
+- name: Enable certbot timer
+  systemd:
+    name: certbot.timer
+    state: started
+    enabled: yes

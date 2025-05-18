@@ -1,0 +1,6 @@
+  certbot:
+    image: "certbot/certbot:v4.0.0"
+    volumes:
+      - /tmp/www/.well-known/acme-challenge/:/var/www/.well-known/acme-challenge/:rw # used to verify domain ownership
+      - ./config/ssl/certbot/:/etc/letsencrypt/:rw # certificate key output folder
+    command: certonly --webroot --webroot-path /var/www/.well-known/acme-challenge/ -d www.pagepress.com.au --non-interactive --agree-tos

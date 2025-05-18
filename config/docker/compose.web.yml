@@ -1,0 +1,31 @@
+services:
+  ngnix:
+    container_name: ngnix
+    image: "nginx:1.28.0-alpine"
+    ports:
+      - 80:80 # http
+      - 443:443 # https
+    volumes:
+      - ./config/ngnix/:/etc/nginx/conf.d/:ro # nginx config
+      - /tmp/www/.well-known/acme-challenge/:/var/www/.well-known/acme-challenge/:ro # used to verify domain ownership
+      - ./config/ssl/:/etc/ssl/:ro # certificate key output folder
+    depends_on:
+      - passphrase-web
+    networks:
+      - public-net
+      - internal-net
+
+  passphrase-web:
+    image: "bluesquid2/password-gen:0.0.1"
+    expose:
+      - 8080 # only exposed internal
+    container_name: passphrase-web
+    networks:
+      - internal-net
+
+networks:
+  public-net:
+    driver: bridge
+  internal-net:
+    internal: true
+    driver: bridge

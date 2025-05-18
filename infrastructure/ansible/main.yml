@@ -4,11 +4,8 @@
   vars:
     ansible_user: root
   tasks:
-    - name: Install kubernetes
-      import_tasks: kubernetes.yml
-
-    - name: Install nginx
-      import_tasks: ngnix.yml
+    - name: Install Docker
+      import_tasks: install-docker.yml
 
     - name: Deploy website
       import_tasks: deploy-website.yml

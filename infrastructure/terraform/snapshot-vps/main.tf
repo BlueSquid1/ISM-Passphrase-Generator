@@ -20,12 +20,12 @@ provider "digitalocean" {
 }
 
 # get the VPS by name
-data "digitalocean_droplet" "k8s" {
-  name = "k8s"
+data "digitalocean_droplet" "web" {
+  name = "web"
 }
 
 # create a snapshot
-resource "digitalocean_droplet_snapshot" "k8s_snapshot" {
-  droplet_id = data.digitalocean_droplet.k8s.id
-  name       = "k8s_snapshot"
+resource "digitalocean_droplet_snapshot" "web_snapshot" {
+  droplet_id = data.digitalocean_droplet.web.id
+  name       = "web_snapshot"
 }

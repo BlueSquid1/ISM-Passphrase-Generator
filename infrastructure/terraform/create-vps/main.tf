@@ -46,25 +46,25 @@ data "digitalocean_ssh_key" "terraform" {
 }
 
 # Create a private network for kubernetes to talk over
-resource "digitalocean_vpc" "k8s_network" {
-  name     = "k8s-network"
+resource "digitalocean_vpc" "web_network" {
+  name     = "web-network"
   region   = "syd1"
   ip_range = "10.0.0.0/24"
 }
 
 # Restore from an existing snapshot
-data "digitalocean_droplet_snapshot" "k8s_snapshot" {
-  name = "k8s_snapshot"
+data "digitalocean_droplet_snapshot" "web_snapshot" {
+  name = "web_snapshot"
   count = var.use_base_image ? 0 : 1
 }
 
 # Create the VPS
-resource "digitalocean_droplet" "k8s" {
-  name = "k8s"
-  image = var.use_base_image ? "ubuntu-24-04-x64" : data.digitalocean_droplet_snapshot.k8s_snapshot[0].id
+resource "digitalocean_droplet" "web" {
+  name = "web"
+  image = var.use_base_image ? "ubuntu-24-04-x64" : data.digitalocean_droplet_snapshot.web_snapshot[0].id
   region = "syd1"
   size = "s-2vcpu-2gb"
-  vpc_uuid = digitalocean_vpc.k8s_network.id
+  vpc_uuid = digitalocean_vpc.web_network.id
   ssh_keys = [
     data.digitalocean_ssh_key.terraform.id
   ]
@@ -87,22 +87,13 @@ resource "digitalocean_droplet" "k8s" {
 
 # Create a reserved IP address
 resource "digitalocean_reserved_ip" "kubernetes_ip" {
-  region = digitalocean_droplet.k8s.region
-  droplet_id = digitalocean_droplet.k8s.id
+  region = digitalocean_droplet.web.region
+  droplet_id = digitalocean_droplet.web.id
 }
 
 # Create a domain
 resource "digitalocean_domain" "pagepress_domain" {
   name       = "pagepress.com.au"
-}
-
-# Assign it to VPS
-resource "digitalocean_record" "default_record" {
-  domain = digitalocean_domain.pagepress_domain.id
-  type   = "A"
-  name   = "@"
-  value  = digitalocean_reserved_ip.kubernetes_ip.ip_address
-  ttl    = var.domain_ttl
 }
 
 # add www subdomain
@@ -119,8 +110,8 @@ output "node_details" {
   description = "Details of the VPS in JSON list format"
   value = jsonencode([
     {
-      name       = digitalocean_droplet.k8s.name
-      ip_address = digitalocean_droplet.k8s.ipv4_address
+      name       = digitalocean_droplet.web.name
+      ip_address = digitalocean_droplet.web.ipv4_address
     }
   ])
 }

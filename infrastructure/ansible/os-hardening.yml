@@ -1,14 +1,14 @@
-- name: Create .ssh folder in k8s home
+- name: Create .ssh folder in web home
   become: yes
-  become_user: k8s
+  become_user: web
   file:
     path: ~/.ssh
     state: directory
 
-- name: Copy ssh key from root to k8s
+- name: Copy ssh key from root to web user
   copy:
     src: /root/.ssh/authorized_keys
-    dest: /home/k8s/.ssh/authorized_keys
+    dest: /home/web/.ssh/authorized_keys
     remote_src: yes
 
 - name: Install UFW

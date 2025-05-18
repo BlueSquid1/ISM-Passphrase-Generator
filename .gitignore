@@ -1,8 +1,12 @@
+www
+
+
 /infrastructure/ansible/inventory.ini
 
 # Local .terraform directories
 .terraform
 darwin_arm64
+
 # .tfstate files
 *.tfstate
 *.tfstate.*

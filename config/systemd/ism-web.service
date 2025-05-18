@@ -1,0 +1,16 @@
+[Unit]
+Description=ISM passphrase generator
+Requires=docker.service
+After=docker.service
+StartLimitIntervalSec=30
+StartLimitBurst=2
+
+[Service]
+Type=simple
+User=web
+Restart=on-failure
+ExecStart=/bin/bash -c "docker-compose --file /home/web/config/docker/compose.web.yml --project-directory /home/web/ up"
+ExecStop=/bin/bash -c "docker-compose --file /home/web/config/docker/compose.web.yml down"
+
+[Install]
+WantedBy=multi-user.target
