@@ -1,14 +1,9 @@
 - name: vps-setup
   become: yes
-  hosts: all
+  hosts: new_vps
   vars:
     ansible_user: root
-  tasks:
-    - name: Install Docker
-      import_tasks: install-docker.yml
 
-    - name: Deploy website
-      import_tasks: deploy-website.yml
-
-    - name: OS hardening
-      import_tasks: os-hardening.yml
+- import_playbook: install-docker.yml
+- import_playbook: deploy-website.yml
+- import_playbook: os-hardening.yml

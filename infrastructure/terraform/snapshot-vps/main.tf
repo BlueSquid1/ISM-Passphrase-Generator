@@ -25,7 +25,7 @@ data "digitalocean_droplet" "web" {
 }
 
 # create a snapshot
-resource "digitalocean_droplet_snapshot" "web_snapshot" {
+resource "digitalocean_droplet_snapshot" "web_preprod_snapshot" {
   droplet_id = data.digitalocean_droplet.web.id
-  name       = "web_snapshot"
+  name       = "web_preprod_snapshot"
 }

@@ -1,5 +1,6 @@
 www
 
+__pycache__
 
 /infrastructure/ansible/inventory.ini
 

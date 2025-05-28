@@ -1,27 +1,36 @@
-- name: Update APT packages
-  apt:
-    update_cache: yes
+- name: vps-setup
+  become: yes
+  hosts: new_vps
+  vars:
+    ansible_user: root
+    
+  tasks:
+    - name: Update APT packages
+      apt:
+        update_cache: yes
+        lock_timeout: 120
 
-- name: Install Docker and docker-compose
-  apt:
-    name: 
-      - docker.io
-      - docker-compose
+    - name: Install Docker and docker-compose
+      apt:
+        name: 
+          - docker.io
+          - docker-compose
+        lock_timeout: 120
 
-- name: Ensure Docker service is running and enabled
-  systemd:
-    name: docker.service
-    state: started
-    enabled: yes
+    - name: Ensure Docker service is running and enabled
+      systemd:
+        name: docker.service
+        state: started
+        enabled: yes
 
-- name: Create web user
-  user:
-    name: web
-    shell: /bin/bash
-    groups: docker
-    home: /home/web
+    - name: Create web user
+      user:
+        name: web
+        shell: /bin/bash
+        groups: docker
+        home: /home/web
 
-- name: Create local systemd service folder
-  file:
-    path: /usr/local/lib/systemd
-    state: directory
+    - name: Create local systemd service folder
+      file:
+        path: /usr/local/lib/systemd
+        state: directory

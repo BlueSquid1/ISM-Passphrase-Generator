@@ -1,31 +1,70 @@
-- name: Copy latest project config files
-  copy:
-    src: ../../config/
-    dest: /home/web/config/
-    owner: web
-    group: web
-    mode: 'preserve'
+---
+- name: Website deployment
+  become: yes
+  hosts: new_vps
+  vars:
+    ansible_user: root
 
-- name: Create symlink for systemd service
-  file:
-    src: /home/web/config/systemd
-    dest: /usr/local/lib/systemd/system
-    state: link
+  tasks:
+    - name: Copy latest project config files
+      copy:
+        src: ../../config/
+        dest: /home/web/config/
+        owner: web
+        group: web
+        mode: 'preserve'
 
-# Copy state from previous instance
+    - name: Create symlink for systemd service
+      file:
+        src: /home/web/config/systemd
+        dest: /usr/local/lib/systemd/system
+        state: link
 
-- name: reload systemd services
-  systemd:
-    daemon-reload: yes
+- name: Website deployment
+  become: yes
+  hosts: current_vps
+  vars:
+    ansible_user: root
+  tasks:
+    - name: Archive config files from current VPS
+      archive:
+        path: /home/web/config
+        dest: /tmp/web_config.tar.gz
+        format: gz
 
-- name: Start web docker container
-  systemd:
-    name: ism-web
-    state: restarted
-    enabled: yes
+    - name: Grab latest config from current VPS
+      fetch:
+        src: /tmp/web_config.tar.gz
+        dest: /tmp/web_config.tar.gz
 
-- name: Enable certbot timer
-  systemd:
-    name: certbot.timer
-    state: started
-    enabled: yes
+- name: Website deployment
+  become: yes
+  hosts: new_vps
+  vars:
+    ansible_user: root
+  tasks:
+    - name: Load config onto new VPS
+      copy:
+        src: /tmp/web_config.tar.gz
+        dest: /home/web/config/
+
+    - name: Cleanup archive
+      file:
+        path: /tmp/web_config.tar.gz
+        state: absent
+
+    - name: Reload systemd services
+      systemd:
+        daemon-reload: yes
+
+    - name: Start web docker container
+      systemd:
+        name: ism-web
+        state: restarted
+        enabled: yes
+
+    - name: Enable certbot timer
+      systemd:
+        name: certbot.timer
+        state: started
+        enabled: yes

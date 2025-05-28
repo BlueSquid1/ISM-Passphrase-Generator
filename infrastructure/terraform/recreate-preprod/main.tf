@@ -24,6 +24,11 @@ variable "ssh_registered_key_name" {
   default = "terraform"
 }
 
+# domain name time to live in seconds
+variable "domain_ttl" {
+  default = 120
+}
+
 # Configure the DigitalOcean Provider to use my personal access token.
 provider "digitalocean" {
   token = var.do_token
@@ -34,10 +39,15 @@ data "digitalocean_ssh_key" "terraform" {
   name = var.ssh_registered_key_name
 }
 
+# Restore from an existing snapshot
+data "digitalocean_droplet_snapshot" "web_preprod_snapshot" {
+  name = "web_preprod_snapshot"
+}
+
 # Create the VPS
-resource "digitalocean_droplet" "web" {
-  name = "web"
-  image = "debian-12-x64"
+resource "digitalocean_droplet" "preprod_web" {
+  name = "preprod_web"
+  image = data.digitalocean_droplet_snapshot.web_preprod_snapshot.id
   region = "syd1"
   size = "s-1vcpu-1gb"
   ssh_keys = [
@@ -53,11 +63,9 @@ resource "digitalocean_droplet" "web" {
       private_key = file(var.pvt_key)
       timeout = "3m"
     }
-    inline = [
-      # Wait for unattended-upgrades to finish
-      "while sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do sleep 5; done",
-      "apt update",
-      "apt install python3 -y"
+    inline = [      
+      "sudo apt update",
+      "sudo apt install python3 -y"
     ]
   }
 }
@@ -67,8 +75,8 @@ output "node_details" {
   description = "Details of the VPS in JSON list format"
   value = jsonencode([
     {
-      name       = digitalocean_droplet.web.name
-      ip_address = digitalocean_droplet.web.ipv4_address
+      name       = digitalocean_droplet.preprod_web.name
+      ip_address = digitalocean_droplet.preprod_web.ipv4_address
     }
   ])
 }

@@ -1,41 +1,47 @@
-- name: Create .ssh folder in web home
+- name: OS Hardening
   become: yes
-  become_user: web
-  file:
-    path: ~/.ssh
-    state: directory
+  hosts: new_vps
+  vars:
+    ansible_user: root
+  tasks:
+    - name: Create .ssh folder in web home
+      become: yes
+      become_user: web
+      file:
+        path: ~/.ssh
+        state: directory
 
-- name: Copy ssh key from root to web user
-  copy:
-    src: /root/.ssh/authorized_keys
-    dest: /home/web/.ssh/authorized_keys
-    remote_src: yes
+    - name: Copy ssh key from root to web user
+      copy:
+        src: /root/.ssh/authorized_keys
+        dest: /home/web/.ssh/authorized_keys
+        remote_src: yes
 
-- name: Install UFW
-  apt:
-    name: ufw
+    - name: Install UFW
+      apt:
+        name: ufw
 
-- name: Allow SSH through UFW
-  community.general.ufw:
-    rule: limit
-    port: ssh
-    proto: tcp
+    - name: Allow SSH through UFW
+      community.general.ufw:
+        rule: limit
+        port: ssh
+        proto: tcp
 
-- name: Allow HTTP through UFW
-  community.general.ufw:
-    rule: allow
-    port: 80
-    proto: tcp
+    - name: Allow HTTP through UFW
+      community.general.ufw:
+        rule: allow
+        port: 80
+        proto: tcp
 
-- name: Allow HTTPS through UFW
-  community.general.ufw:
-    rule: allow
-    port: 443
-    proto: tcp
+    - name: Allow HTTPS through UFW
+      community.general.ufw:
+        rule: allow
+        port: 443
+        proto: tcp
 
-- name: Enable UFW
-  community.general.ufw:
-    state: enabled
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
 
 # - name: remove ssh key from root user
 #   file:
