@@ -8,6 +8,11 @@ terraform {
   }
 }
 
+# Name of the VPS in Digital Ocean
+variable "vps_name" {
+  description = "Name of the VPS to create"
+}
+
 # Path to private SSH key
 variable "pvt_key" {
   description = "Path to SSH private key"
@@ -36,7 +41,7 @@ data "digitalocean_ssh_key" "terraform" {
 
 # Create the VPS
 resource "digitalocean_droplet" "web" {
-  name = "web"
+  name = var.vps_name
   image = "debian-12-x64"
   region = "syd1"
   size = "s-1vcpu-1gb"

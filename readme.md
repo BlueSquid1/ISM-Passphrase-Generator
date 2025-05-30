@@ -20,7 +20,6 @@ docker build -t go-server .
 ```
 
 ## TODO
-- enable states in digitalocean
 - use digital ocean docker register
 
 ## Thoughts on how to do CI/CD

@@ -8,6 +8,11 @@ terraform {
   }
 }
 
+# Name of the VPS in Digital Ocean
+variable "vps_name" {
+  description = "Name of the VPS to create"
+}
+
 # Personal access token to DigitalOcean
 variable "do_token" {
   sensitive = true
@@ -21,11 +26,11 @@ provider "digitalocean" {
 
 # get the VPS by name
 data "digitalocean_droplet" "web" {
-  name = "web"
+  name = var.vps_name
 }
 
 # create a snapshot
 resource "digitalocean_droplet_snapshot" "web_preprod_snapshot" {
   droplet_id = data.digitalocean_droplet.web.id
-  name       = "web_preprod_snapshot"
+  name       = "${var.vps_name}-snapshot"
 }

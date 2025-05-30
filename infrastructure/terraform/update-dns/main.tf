@@ -8,6 +8,11 @@ terraform {
   }
 }
 
+# Name of the VPS in Digital Ocean
+variable "vps_name" {
+  description = "Name of the VPS to start pointing to"
+}
+
 # Personal access token to DigitalOcean
 variable "do_token" {
   sensitive = true
@@ -26,7 +31,7 @@ provider "digitalocean" {
 
 # get the VPS by name
 data "digitalocean_droplet" "web" {
-  name = "web"
+  name = var.vps_name
 }
 
 # Create a reserved IP address

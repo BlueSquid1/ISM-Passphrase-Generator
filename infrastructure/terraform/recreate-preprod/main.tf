@@ -41,12 +41,12 @@ data "digitalocean_ssh_key" "terraform" {
 
 # Restore from an existing snapshot
 data "digitalocean_droplet_snapshot" "web_preprod_snapshot" {
-  name = "web_preprod_snapshot"
+  name = "preprod-web-snapshot"
 }
 
 # Create the VPS
 resource "digitalocean_droplet" "preprod_web" {
-  name = "preprod_web"
+  name = "old-preprod-web"
   image = data.digitalocean_droplet_snapshot.web_preprod_snapshot.id
   region = "syd1"
   size = "s-1vcpu-1gb"
