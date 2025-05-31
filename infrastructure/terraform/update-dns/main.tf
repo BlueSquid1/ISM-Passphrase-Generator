@@ -8,9 +8,9 @@ terraform {
   }
 }
 
-# Name of the VPS in Digital Ocean
-variable "vps_name" {
-  description = "Name of the VPS to start pointing to"
+# Public IP Address of the VPS to get
+variable "ip_address" {
+  description = "Public IP Address of the VPS to get"
 }
 
 # Personal access token to DigitalOcean
@@ -29,17 +29,6 @@ provider "digitalocean" {
   token = var.do_token
 }
 
-# get the VPS by name
-data "digitalocean_droplet" "web" {
-  name = var.vps_name
-}
-
-# Create a reserved IP address
-resource "digitalocean_reserved_ip" "web_reserved_ip" {
-  region = digitalocean_droplet.web.region
-  droplet_id = digitalocean_droplet.web.id
-}
-
 # Create a domain
 resource "digitalocean_domain" "pagepress_domain" {
   name       = "pagepress.com.au"
@@ -50,6 +39,6 @@ resource "digitalocean_record" "www" {
   domain = digitalocean_domain.pagepress_domain.id
   type   = "A"
   name   = "www"
-  value  = digitalocean_reserved_ip.web_reserved_ip.ip_address
+  value  = var.ip_address
   ttl    = var.domain_ttl
 }

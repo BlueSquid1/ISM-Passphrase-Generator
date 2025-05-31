@@ -17,16 +17,17 @@ def main(environment: Environment):
     newIpAddress = deployMgr.generateNewVps()
     print(f"New VPS IP: {newIpAddress}")
     print("getting current server IP")
-    currentIpAddress = deployMgr.getCurrentServerIp()
-    print(f"Current server IP: {currentIpAddress}")
+    oldIpAddress = deployMgr.getCurrentServerIp()
+    print(f"Old server IP: {oldIpAddress}")
+    sourceVpsIp = oldIpAddress
 
-    if currentIpAddress is None:
+    if sourceVpsIp is None:
         # Can't get the current server IP, This is probably because it's the first time.
         # Just use the new VPS as the IP for the first time
-        currentIpAddress = newIpAddress
+        sourceVpsIp = newIpAddress
 
     print("Running Ansible on new VPS")
-    deployMgr.runAnsibleOnNewVps(newIpAddress, currentIpAddress)
+    deployMgr.runAnsibleOnNewVps(newIpAddress, sourceVpsIp)
 
     # run integration tests
     print("Running integration tests")
@@ -37,10 +38,10 @@ def main(environment: Environment):
     print("Integration tests passed")
 
     print("Switching to new VPS")
-    deployMgr.switchToNewVps()
+    deployMgr.switchToNewVps(newIpAddress)
 
     print("Deactivating old VPS")
-    deployMgr.deactivateOldVps()
+    deployMgr.deactivateOldVps(oldIpAddress)
 
     print("finished")
     return 0

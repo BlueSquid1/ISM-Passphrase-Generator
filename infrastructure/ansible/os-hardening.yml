@@ -43,6 +43,13 @@
       community.general.ufw:
         state: enabled
 
+    - name: reboot vps
+      reboot:
+        msg: "Rebooting the VPS after OS hardening"
+        connect_timeout: 5
+        reboot_timeout: 600
+        test_command: whoami
+
 # - name: remove ssh key from root user
 #   file:
 #     path: /root/.ssh/authorized_keys

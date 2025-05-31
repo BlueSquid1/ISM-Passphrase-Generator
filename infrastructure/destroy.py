@@ -12,11 +12,12 @@ def main(environment: Environment):
         deployMgr = DeploymentManagerProd()
     else:
         raise ValueError(f"Unsupported environment: {environment}")
-    
+    print("getting current server IP")
+    oldIpAddress = deployMgr.getCurrentServerIp(noCreating=True)
     print("Destroying new VPS")
-    deployMgr.destroyNewVps()
+    deployMgr.destroyNewVps(oldIpAddress)
     print("Deactivating old VPS")
-    deployMgr.deactivateOldVps()
+    deployMgr.deactivateOldVps(oldIpAddress)
 
     print("finished")
     return 0
