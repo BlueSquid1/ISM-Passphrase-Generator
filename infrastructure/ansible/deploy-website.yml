@@ -28,14 +28,17 @@
   tasks:
     - name: Archive config files from current VPS
       archive:
-        path: /home/web/config
+        path: /home/web/config/
         dest: /tmp/web_config.tar.gz
+        mode: 'u+rw'
         format: gz
+        force_archive: true
 
     - name: Grab latest config from current VPS
       fetch:
+        flat: yes
         src: /tmp/web_config.tar.gz
-        dest: /tmp/web_config.tar.gz
+        dest: /tmp/
 
 - name: Website deployment
   become: yes
@@ -43,16 +46,13 @@
   vars:
     ansible_user: root
   tasks:
-    - name: Load config onto new VPS
-      copy:
+    - name: Extract config files on new VPS
+      unarchive:
         src: /tmp/web_config.tar.gz
         dest: /home/web/config/
-
-    - name: Cleanup archive
-      file:
-        path: /tmp/web_config.tar.gz
-        state: absent
-
+        owner: web
+        group: web
+        
     - name: Reload systemd services
       systemd:
         daemon-reload: yes
