@@ -2,8 +2,9 @@
 Description=Run certbot daily and on boot
 
 [Timer]
-OnBootSec=1min
-OnUnitActiveSec=1d
+OnBootSec=1m
+OnCalendar=daily
+Persistent=true
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=timers.target

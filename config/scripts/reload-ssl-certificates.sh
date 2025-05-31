@@ -4,7 +4,7 @@ set -e
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # regenerate SSL certificates
-docker-compose --file ${SCRIPT_DIR}/../docker/compose.certbot.yml --project-directory ${SCRIPT_DIR}/../../ up --abort-on-container-exit --exit-code-from certbot
+docker-compose --file ${SCRIPT_DIR}/../docker/compose.certbot.yml --project-directory ${SCRIPT_DIR}/../../ up --exit-code-from certbot
 
 # Ensure symlinks point to the new certificates
 ln -f -s ./certbot/live/www.pagepress.com.au/fullchain.pem ${SCRIPT_DIR}/../ssl/ism-fullchain.pem
